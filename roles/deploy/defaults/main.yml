@@ -1,0 +1,27 @@
+---
+k3s_server_manifests_templates_remove: []
+k3s_server_resources_remove: []
+  # - name:
+  #   kind:
+  #   namespace:
+
+### Values for tasks that extend 'xanmanning.k3s' ###
+
+# Source: https://github.com/PyratLabs/ansible-role-k3s/blob/78cf2c18660b11fc1c3ce7b691aedd763243323a/vars/main.yml#L64-L71
+# Generate a runtime config dictionary
+k3s_runtime_config: "{{
+  (k3s_control_node is defined and k3s_control_node)
+  | ternary(
+      (k3s_server | default({})) | combine (k3s_agent | default({})),
+      (k3s_agent | default({})),
+      (k3s_server | default({})) | combine (k3s_agent | default({})))
+}}"
+
+# Source: https://github.com/PyratLabs/ansible-role-k3s/blob/78cf2c18660b11fc1c3ce7b691aedd763243323a/vars/main.yml#L103-L104
+# Data directory location for k3s
+k3s_data_dir: "{{ k3s_runtime_config['data-dir'] | default('/var/lib/rancher/k3s') }}"
+
+# Source: https://github.com/PyratLabs/ansible-role-k3s/blob/78cf2c18660b11fc1c3ce7b691aedd763243323a/vars/main.yml#L112-L114
+# Path for additional Kubernetes Manifests
+# https://rancher.com/docs/k3s/latest/en/advanced/#auto-deploying-manifests
+k3s_server_manifests_dir: "{{ k3s_data_dir }}/server/manifests"

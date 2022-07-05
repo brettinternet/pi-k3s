@@ -1,0 +1,78 @@
+---
+- name: Update
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Upgrade
+  ansible.builtin.apt:
+    upgrade: dist
+
+- name: Install
+  ansible.builtin.apt:
+    name:
+      - sudo
+      # For Flannel backend
+      - wireguard
+
+- name: Copy sudoers defaults
+  ansible.builtin.copy:
+    src: sudoers-defaults
+    dest: /etc/sudoers.d/defaults
+    validate: "visudo -cf %s"
+    mode: 0644
+
+- name: Disable SSH password tunneling
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    line: PasswordAuthentication no
+
+- name: Only allow SSH from current user
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    line: "AllowUsers {{ ansible_user }}"
+
+- name: Enable IPv4 forwarding
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    sysctl_set: true
+    state: present
+    reload: true
+
+- name: Enable IPv6 forwarding
+  ansible.posix.sysctl:
+    name: net.ipv6.conf.all.forwarding
+    value: "1"
+    sysctl_set: true
+    state: present
+    reload: true
+
+- name: Activating cgroup support
+  ansible.builtin.lineinfile:
+    path: /boot/cmdline.txt
+    regexp: '^((?!.*\bcgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory\b).*)$'
+    line: '\1 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory'
+    backrefs: true
+  notify:
+    - reboot
+#
+# https://unix.stackexchange.com/questions/584637/iptables-legacy-with-normal-iptables-in-debian-buster
+# https://github.com/k3s-io/k3s/issues/1812
+# - name: Flush iptables before changing to iptables-legacy
+#   iptables:
+#     flush: true
+#   changed_when: false   # iptables flush always returns changed
+
+# - name: Changing to iptables-legacy
+#   alternatives:
+#     path: /usr/sbin/iptables-legacy
+#     name: iptables
+#   register: ip4_legacy
+
+# - name: Changing to ip6tables-legacy
+#   alternatives:
+#     path: /usr/sbin/ip6tables-legacy
+#     name: ip6tables
+#   register: ip6_legacy
+#

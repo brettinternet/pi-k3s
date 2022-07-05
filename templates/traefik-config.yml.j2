@@ -1,0 +1,68 @@
+{# Customizing k3s Traefik: https://rancher.com/docs/k3s/latest/en/helm/#customizing-packaged-components-with-helmchartconfig -#}
+{# K3s default config: https://github.com/k3s-io/k3s/blob/master/manifests/traefik.yaml -#}
+{# possible Helm config options: https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml -#}
+{# LE DNS Challenge env vars https://go-acme.github.io/lego/dns/cloudflare/ -#}
+{# WIP get real IP: https://github.com/k3s-io/k3s/discussions/2997 -#}
+
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    service:
+      spec:
+        externalTrafficPolicy: Local
+    logs:
+      level: WARN
+      access:
+        enabled: false
+    ingressRoute:
+      dashboard:
+        enabled: true
+          #additionalVolumeMounts:
+          #- name: traefik-logs
+          #mountPath: /var/log/traefik
+    additionalArguments:
+      - --certificatesresolvers.le.acme.email=brettinternet@gmail.com
+      - --certificatesresolvers.le.acme.storage=/data/acme.json
+      - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.le.acme.dnschallenge.resolvers=1.1.1.1
+{% if letsencrypt_staging %}
+      - --certificatesresolvers.le.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory
+{% endif %}
+    persistence:
+      enabled: true
+      path: /data
+      size: 128Mi
+    env:
+      - name: CF_API_EMAIL
+        valueFrom:
+          secretKeyRef:
+            name: traefik-cloudflare-dns-challenge
+            key: CF_API_EMAIL
+      - name: CF_DNS_API_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: traefik-cloudflare-dns-challenge
+            key: CF_DNS_API_TOKEN
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: TLSOption
+metadata:
+  name: default
+  namespace: default
+spec:
+  minVersion: VersionTLS12
+  cipherSuites:
+    - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384   # TLS 1.2
+    - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305    # TLS 1.2
+    - TLS_AES_256_GCM_SHA384                  # TLS 1.3
+    - TLS_CHACHA20_POLY1305_SHA256            # TLS 1.3
+  curvePreferences:
+    - CurveP521
+    - CurveP384
+  sniStrict: true

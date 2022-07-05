@@ -1,0 +1,48 @@
+---
+all:
+  children:
+    k3s_cluster:
+      hosts:
+        # host keys will be hostnames, and should be unique
+        pi1:
+          ansible_host: 192.168.1.1
+          k3s_control_node: true
+        pi2:
+          ansible_host: 192.168.1.2
+          k3s_control_node: true
+        pi3:
+          ansible_host: 192.168.1.3
+          k3s_control_node: true
+        pi4:
+          ansible_host: 192.168.1.4
+          k3s_control_node: true
+        pi5:
+          ansible_host: 192.168.1.5
+          k3s_control_node: true
+
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+        ansible_user: pi
+        ansible_become_password:
+
+        domain: example.com
+
+        # k3s_state: uninstalled
+        k3s_server_manifests_templates: # playbooks: setup, deploy
+          - whoami.yml.j2
+          - traefik-config.yml.j2
+          - secrets.yml.j2
+        k3s_server_manifests_templates_remove: [] # playbooks: deploy
+
+        # htpasswd -nb admin admin | base64
+        basic_auth_user:
+
+        # Use LetsEncrypt staging API (while debugging)
+        letsencrypt_staging: true
+        # For LetsEncrypt DNS Challenge
+        cf_api_email:
+        cf_dns_api_token:
+
+        # Get token after creation with:
+        # sudo k3s kubectl -n kubernetes-dashboard describe secret kubernetes-dashboard | grep '^token'
+        kubernetes_dashboard_user: kubernetes-dashboard

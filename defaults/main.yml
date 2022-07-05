@@ -1,0 +1,3 @@
+---
+letsencrypt_staging: true
+k3s_state: installed

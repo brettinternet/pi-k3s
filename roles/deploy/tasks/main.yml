@@ -1,0 +1,33 @@
+---
+# Source: https://github.com/PyratLabs/ansible-role-k3s/blob/d38f34493765aca3d31089a35ef0228501fd63e5/tasks/ensure_k3s_auto_deploy.yml#L23-L32
+# Docs: https://rancher.com/docs/k3s/latest/en/advanced/#auto-deploying-manifests
+- name: Ensure auto-deploying manifests are copied to the primary controller
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "{{ k3s_server_manifests_dir }}/{{ item | basename | replace('.j2','') }}"
+    mode: 0644
+  loop: "{{ k3s_server_manifests_templates }}"
+  become: "{{ k3s_become }}"
+  when:
+    - k3s_server_manifests_templates | length > 0
+
+# Added var `k3s_server_manifests_templates_remove` to clean up manifests
+- name: Ensure removed manifests are not present
+  ansible.builtin.file:
+    path: "{{ k3s_server_manifests_dir }}/{{ item | basename | replace('.j2','') }}"
+    state: absent
+  loop: "{{ k3s_server_manifests_templates_remove }}"
+  become: "{{ k3s_become }}"
+  when:
+    - k3s_server_manifests_templates_remove | length > 0
+
+# Manifests are auto-deployed, but not cleaned up once the manifest is removed
+- name: Ensure resources removed
+  kubernetes.core.k8s:
+    state: absent
+    kind: "{{ item['kind'] }}"
+    namespace: "{{ item['namespace'] }}"
+    name: "{{ item['name'] }}"
+  loop: "{{ k3s_server_resources_remove }}"
+  when:
+    - k3s_server_resources_remove | length > 0

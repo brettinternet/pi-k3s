@@ -1,0 +1,4 @@
+---
+roles:
+  # https://github.com/PyratLabs/ansible-role-k3s
+  - xanmanning.k3s
