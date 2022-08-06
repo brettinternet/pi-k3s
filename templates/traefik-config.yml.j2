@@ -1,6 +1,6 @@
 {# Customizing k3s Traefik: https://rancher.com/docs/k3s/latest/en/helm/#customizing-packaged-components-with-helmchartconfig -#}
 {# K3s default config: https://github.com/k3s-io/k3s/blob/master/manifests/traefik.yaml -#}
-{# possible Helm config options: https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml -#}
+{# possible Helm config options (view tag version): https://github.com/traefik/traefik-helm-chart/blob/v10.19.3/traefik/values.yaml -#}
 {# LE DNS Challenge env vars https://go-acme.github.io/lego/dns/cloudflare/ -#}
 {# WIP get real IP: https://github.com/k3s-io/k3s/discussions/2997 -#}
 
@@ -18,25 +18,27 @@ spec:
     logs:
       level: WARN
       access:
-        enabled: false
+        enabled: true
+        format: json
     ingressRoute:
       dashboard:
         enabled: true
-          #additionalVolumeMounts:
-          #- name: traefik-logs
-          #mountPath: /var/log/traefik
     additionalArguments:
+      - --accesslog.filepath=/data/access.log
       - --certificatesresolvers.le.acme.email=brettinternet@gmail.com
       - --certificatesresolvers.le.acme.storage=/data/acme.json
       - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
       - --certificatesresolvers.le.acme.dnschallenge.resolvers=1.1.1.1
-{% if letsencrypt_staging %}
+{% if letsencrypt_staging | default(true) %}
       - --certificatesresolvers.le.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory
 {% endif %}
     persistence:
       enabled: true
+      name: data
       path: /data
       size: 128Mi
+    nodeSelector:
+      storage-type: usb
     env:
       - name: CF_API_EMAIL
         valueFrom:
@@ -66,3 +68,40 @@ spec:
     - CurveP521
     - CurveP384
   sniStrict: true
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: local-path-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 128Mi
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: usb-path-pv
+spec:
+  capacity:
+    storage: 100Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: local-storage
+  local:
+    path: /mnt/storage/traefik
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - pi5-29a69181

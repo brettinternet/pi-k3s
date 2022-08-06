@@ -1,0 +1,41 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: local-path-config
+  namespace: local-path-storage
+data:
+  config.json: |-
+        {
+          "nodePathMap": [
+            {
+              "node":"DEFAULT_PATH_FOR_NON_LISTED_NODES",
+              "paths":["/data"]
+            },
+            {
+              "node":"pi5-29a69181",
+              "paths":["/mnt/storage"]
+            }
+          ]
+        }
+  setup: |-
+        #!/bin/sh
+        set -eu
+        if [ "$VOL_DIR" == "/data" ]; then
+          mkdir -m 0777 -p "$VOL_DIR"
+        fi
+  teardown: |-
+        #!/bin/sh
+        set -eu
+        if [ "$VOL_DIR" == "/data" ]; then
+          rm -rf "$VOL_DIR"
+        fi
+  helperPod.yaml: |-
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: helper-pod
+        spec:
+          containers:
+          - name: helper-pod
+            image: busybox

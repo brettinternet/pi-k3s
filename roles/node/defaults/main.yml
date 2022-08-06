@@ -1,0 +1,4 @@
+---
+node_labels: []
+node_annotations: []
+kubeconfig_file: /etc/rancher/k3s/k3s.yaml

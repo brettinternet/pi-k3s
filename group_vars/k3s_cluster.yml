@@ -1,0 +1,16 @@
+---
+# Templates
+letsencrypt_staging: true
+kubeconfig_file: /etc/rancher/k3s/k3s.yaml
+
+# k3s role: https://github.com/PyratLabs/ansible-role-k3s#globalcluster-variables
+# k3s_state: started
+k3s_become: true
+k3s_etcd_datastore: true
+# quotes required
+k3s_server:
+  write-kubeconfig-mode: "0644"
+  with-node-id: true
+  flannel-backend: "wireguard"
+k3s_agent:
+  with-node-id: true

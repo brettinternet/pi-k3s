@@ -1,4 +1,4 @@
-.PHONY: setup requirements lint
+.PHONY: setup requirements python lint
 
 inventory.yml:
 	@cp example.inventory.yml inventory.yml
@@ -10,6 +10,10 @@ requirements:
 
 setup: inventory.yml requirements
 	@printf "\x1B[01;93m✔ Setup complete\n\x1B[0m"
+
+python:
+	@pip install -r requirements.txt
+	@printf "\x1B[01;93m✔ Python requirements installed\n\x1B[0m"
 
 # ansible-lint:
 # workon linux

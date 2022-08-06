@@ -2,3 +2,7 @@
 roles:
   # https://github.com/PyratLabs/ansible-role-k3s
   - xanmanning.k3s
+
+collections:
+  # https://github.com/ansible-collections/kubernetes.core
+  - kubernetes.core

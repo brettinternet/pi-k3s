@@ -1,0 +1,30 @@
+---
+- block:
+    - name: Slurp host machine id
+      ansible.builtin.slurp:
+        src: /etc/machine-id
+      register: machine_id_slurp
+
+    - name: Get node object
+      kubernetes.core.k8s_info:
+        kubeconfig: "{{ kubeconfig_file }}"
+        kind: Node
+      register: nodes
+
+    - name: Label/annotate node
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_file }}"
+        state: patched
+        kind: Node
+        name: item['metadata']['name']
+        definition:
+          metadata:
+            labels: "{{ node_labels }}"
+            annotations: "{{ node_annotations }}"
+      when: machine_id_slurp | b64decode == item['status']['nodeInfo']['machineID']
+      # Alternatively we could use hostname in node name
+      # inventory_hostname in item['metadata']['name']
+      loop: "{{ nodes['resources'] }}"
+
+  when:
+    - node_labels | length > 0 or node_annotations | length > 0

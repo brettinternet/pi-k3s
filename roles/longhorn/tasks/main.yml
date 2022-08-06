@@ -1,0 +1,13 @@
+---
+# Change default StorageClass https://kubernetes.io/docs/tasks/administer-cluster/change-default-storage-class/
+- name: Remove local path storageclass default setting
+  # kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_file }}"
+    state: patched
+    kind: StorageClass
+    name: local-path
+    definition:
+      metadata:
+        annotations:
+          storageclass.kubernetes.io/is-default-class: "false"

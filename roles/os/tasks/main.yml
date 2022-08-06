@@ -1,21 +1,36 @@
 ---
+- name: Clear MOTD
+  become: true
+  ansible.builtin.copy:
+    content: ""
+    dest: /etc/motd
+
 - name: Update
+  become: true
   ansible.builtin.apt:
     update_cache: true
     cache_valid_time: 3600
 
 - name: Upgrade
+  become: true
   ansible.builtin.apt:
     upgrade: dist
 
 - name: Install
+  become: true
   ansible.builtin.apt:
     name:
       - sudo
-      # For Flannel backend
+      - vim
+      # To install kubernetes role dependency
+      - python3-pip
+      # Flannel backend
       - wireguard
+      # Longhorn dependency
+      # - open-iscsi
 
 - name: Copy sudoers defaults
+  become: true
   ansible.builtin.copy:
     src: sudoers-defaults
     dest: /etc/sudoers.d/defaults
@@ -23,16 +38,19 @@
     mode: 0644
 
 - name: Disable SSH password tunneling
+  become: true
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     line: PasswordAuthentication no
 
 - name: Only allow SSH from current user
+  become: true
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     line: "AllowUsers {{ ansible_user }}"
 
 - name: Enable IPv4 forwarding
+  become: true
   ansible.posix.sysctl:
     name: net.ipv4.ip_forward
     value: "1"
@@ -41,6 +59,7 @@
     reload: true
 
 - name: Enable IPv6 forwarding
+  become: true
   ansible.posix.sysctl:
     name: net.ipv6.conf.all.forwarding
     value: "1"
@@ -49,6 +68,7 @@
     reload: true
 
 - name: Activating cgroup support
+  become: true
   ansible.builtin.lineinfile:
     path: /boot/cmdline.txt
     regexp: '^((?!.*\bcgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory\b).*)$'
@@ -56,6 +76,10 @@
     backrefs: true
   notify:
     - reboot
+
+- name: Add kubernetes library for k8s role
+  ansible.builtin.pip:
+    name: kubernetes
 #
 # https://unix.stackexchange.com/questions/584637/iptables-legacy-with-normal-iptables-in-debian-buster
 # https://github.com/k3s-io/k3s/issues/1812
